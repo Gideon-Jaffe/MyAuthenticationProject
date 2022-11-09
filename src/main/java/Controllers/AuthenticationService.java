@@ -1,5 +1,8 @@
 package Controllers;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.io.*;
 import java.security.InvalidParameterException;
 import java.util.*;
@@ -9,6 +12,8 @@ class AuthenticationService {
     private static volatile AuthenticationService authService;
     private UserRepository userRepo;
     Map<String, User> userTokens;
+
+    static Logger log = LogManager.getLogger(AuthenticationController.class.getName());
 
     private AuthenticationService() {
         this.userTokens = new HashMap<>();
@@ -23,6 +28,7 @@ class AuthenticationService {
             synchronized (AuthenticationService.class) {
                 result = authService;
                 if (result == null) {
+                    log.info("initializing authentication service singleton");
                     authService = result = new AuthenticationService();
                 }
             }
@@ -37,6 +43,7 @@ class AuthenticationService {
             try {
                 userRepo.writeToFile(user.getEmail() + ".json", user);
             } catch (IOException e) {
+                log.fatal("cant write to file");
                 System.out.println("Couldn't write to file");
                 throw new RuntimeException(e);
             }
@@ -45,6 +52,7 @@ class AuthenticationService {
 
     User validate(String token) {
         if (!userTokens.containsKey(token)) {
+            log.error("entered wrong token");
             throw new InvalidParameterException("Token incorrect");
         }
         return userTokens.get(token);
@@ -54,8 +62,10 @@ class AuthenticationService {
     String login(String email, String password) {
         User cachedUser = userRepo.readFromCache(email);
         if (cachedUser == null) {
+            log.warn("user doesn't exist");
             throw new IllegalArgumentException("user doesn\"t exist");
         } else if (!Objects.equals(cachedUser.getPassword(), password)) {
+            log.error("entered wrong password");
             throw new IllegalArgumentException("wrong password");
         }
         return createToken(cachedUser);
@@ -64,10 +74,12 @@ class AuthenticationService {
     private String createToken(User user) {
         String token = UUID.randomUUID().toString();
         userTokens.put(token, user);
+        log.info("Created token " + token + " for " + user);
         return token;
     }
 
     void reloadUser(String email, String token) {
+        log.info("reload token " + token + " with email " + email);
         User updatedUser = userRepo.readFromCache(email);
         userTokens.put(token, updatedUser);
     }

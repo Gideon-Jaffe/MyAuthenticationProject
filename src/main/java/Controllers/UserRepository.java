@@ -10,6 +10,8 @@ class UserRepository {
     private static volatile UserRepository userRepo;
     Map<String, User> usersCache;
 
+    static String FILE_DIRECTORY = "./users/";
+
     static UserRepository getInstance() {
 
         UserRepository result = userRepo;
@@ -28,7 +30,7 @@ class UserRepository {
     private UserRepository() {
 
         usersCache = new HashMap<>();
-        loadAllUsersToCache(new File("src\\main\\java\\Controllers\\users"));
+        loadAllUsersToCache(new File(FILE_DIRECTORY));
     }
 
     User readFromCache(String email){
@@ -47,7 +49,7 @@ class UserRepository {
     }
 
     void deleteFile(String path) {
-        File file = new File("src\\main\\java\\Controllers\\users\\" + path);
+        File file = new File(FILE_DIRECTORY + path);
         boolean b= file.delete();
     }
 
@@ -61,7 +63,7 @@ class UserRepository {
 
     void writeToFile(String fileName, User user) throws IOException {
         Gson gson = new Gson();
-        try (FileWriter fw = new FileWriter("src\\main\\java\\Controllers\\users\\" + fileName)) {
+        try (FileWriter fw = new FileWriter(FILE_DIRECTORY + fileName)) {
             String userJson = gson.toJson(user);
             fw.write(userJson);
             usersCache.put(user.getEmail(), user);
